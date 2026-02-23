@@ -5,7 +5,7 @@ from py_clob_client.clob_types import *
 from py_clob_client.exceptions import PolyApiException
 from py_clob_client.order_builder.constants import BUY, SELL
 
-from config import ENDPOINTS
+from polymarklib.config import ENDPOINTS
 
 class Spender:
     def __init__(self, *, wallet_address: str, signature_type: int, private_key: str | None = None, allow_live: bool = False):

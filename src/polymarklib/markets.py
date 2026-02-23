@@ -3,7 +3,7 @@ import json
 from typing import Tuple, Any
 from dataclasses import dataclass
 
-from config import ENDPOINTS
+from polymarklib.config import ENDPOINTS
 
 @dataclass(frozen=True)
 class Market:
