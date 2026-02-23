@@ -14,17 +14,6 @@ class Action:
     slug: str
     timestamp: int
 
-@dataclass(frozen=True)
-class ActivePosition:
-    user_id: str
-    type: str
-    spend: float
-    price: float
-    side: str
-    title: str
-    slug: str
-    timestamp: int
-
 class UsersClient:
     def __init__(self, session=None):
         self.session = session
