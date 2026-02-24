@@ -110,8 +110,8 @@ def fetch_quote(token_id: str, timeout: float = 15.0) -> Tuple[float, float]:
     """
     base = f"{ENDPOINTS.clob}/price"
 
-    bid_resp = requests.get(base, params={"token_id": token_id, "side": "sell"}, timeout=timeout)
-    ask_resp = requests.get(base, params={"token_id": token_id, "side": "buy"},  timeout=timeout)
+    bid_resp = requests.get(base, params={"token_id": token_id, "side": "SELL"}, timeout=timeout)
+    ask_resp = requests.get(base, params={"token_id": token_id, "side": "BUY"},  timeout=timeout)
 
     bid_resp.raise_for_status()
     ask_resp.raise_for_status()

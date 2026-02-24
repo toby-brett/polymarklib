@@ -1,5 +1,5 @@
 Metadata-Version: 2.4
 Name: polymarklib
-Version: 0.1.0
+Version: 0.1.4
 Requires-Python: >=3.10
 Requires-Dist: requests>=2.31.0

@@ -10,3 +10,5 @@ src/polymarklib.egg-info/SOURCES.txt
 src/polymarklib.egg-info/dependency_links.txt
 src/polymarklib.egg-info/requires.txt
 src/polymarklib.egg-info/top_level.txt
+tests/test_fetch_market.py
+tests/test_quotes_http.py
