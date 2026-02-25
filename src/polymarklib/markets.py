@@ -1,17 +1,38 @@
+import asyncio
+
 import requests
 import json
+import aiohttp
 from typing import Tuple, Any
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from polymarklib.config import ENDPOINTS
 
-@dataclass(frozen=True)
+@dataclass
 class Market:
     slug: str
     question: str | None
     outcomes: tuple[str, ...]
     clob_token_ids: tuple[str, ...]
     raw: dict[str, Any]
+
+    end_seconds: int | None = None
+
+    _session: aiohttp.ClientSession | None = field(
+        default=None, init=False, repr=False, compare=False
+    )
+
+    async def get_session(self) -> aiohttp.ClientSession:
+        if self._session is None or self._session.closed:
+            self._session = aiohttp.ClientSession(
+                timeout=aiohttp.ClientTimeout(total=10),
+                connector=aiohttp.TCPConnector(limit=100, ttl_dns_cache=300),
+            )
+        return self._session
+
+    async def aclose(self) -> None:
+        if self._session is not None and not self._session.closed:
+            await self._session.close()
 
     @property
     def token_map(self) -> dict[str, str]:
@@ -24,14 +45,56 @@ class Market:
 
         return dict(zip(self.outcomes, self.clob_token_ids))
 
-    def fetch_quotes(self) -> dict[str, dict[str, float]]:
-        token_map = self.token_map
-        quotes = {}
-        for outcome, token in token_map.items():
-            bid, ask = fetch_quote(token)
-            quotes[outcome] = {"bid": bid, "ask": ask}
+    def fetch_time_left(self) -> float:
+        """
+        Fetches the time left from a market in seconds
+        :return: market time left in seconds
+        """
 
-        return quotes
+
+    async def fetch_quote_async(self, token_id: str) -> Tuple[float, float]:
+        """
+        Fetches the quotes from a given token_id
+
+        :return (bid, ask)
+
+        :raises requests.HTTPError: if non-200 response - usually if out of date market slug used
+        :raises requests.RequestException: on network failure
+        :raises ValueError: if response is not valid JSON
+
+        """
+        session = await self.get_session()
+        base = f"{ENDPOINTS.clob}/price"
+
+        async def one(side: str) -> float:
+            async with session.get(
+                base, params={"token_id": token_id, "side": side}
+            ) as resp:
+                resp.raise_for_status()
+                data = await resp.json()
+                price = data.get("price")
+                if price is None:
+                    raise ValueError(f"Null price (token_id={token_id}, side={side})")
+                return float(price)
+
+        bid, ask = await asyncio.gather(one("SELL"), one("BUY"))
+        return bid, ask
+
+    async def fetch_quotes(self) -> dict[str, dict[str, float]]:
+        """
+        Fetches all market quotes concurrently
+        :return:
+        """
+        token_map = self.token_map
+
+        async def fetch_one(outcome: str, token: str):
+            bid, ask = await self.fetch_quote_async(token)
+            return outcome, {"bid": bid, "ask": ask}
+
+        results = await asyncio.gather(
+            *[fetch_one(outcome, token) for outcome, token in token_map.items()]
+        )
+        return dict(results)
 
     @staticmethod
     def from_gamma(gamma_resp: dict) -> "Market":
@@ -75,7 +138,7 @@ def fetch_market_by_slug(slug: str, timeout: float = 15.0) -> Market:
         Parsed JSON response
 
     Raises:
-        requests.HTTPError: if non-200 response
+        requests.HTTPError: if non-200 response - usually if out of date market slug used
         requests.RequestException: on network failure
         ValueError: if response is not valid JSON
 
