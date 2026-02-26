@@ -153,7 +153,6 @@ def fetch_market_by_slug(slug: str, timeout: float = 15.0) -> Market:
     return Market.from_gamma(data)
 
 
-
 def fetch_quote(token_id: str, timeout: float = 15.0) -> Tuple[float, float]:
     """
     Fetches a price quote for a specific token ID
